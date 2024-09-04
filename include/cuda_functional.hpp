@@ -26,8 +26,20 @@ __global__ void generate_coords_grid(float* grid, int w, int h);
 
 void create_coords_grid(float* grid, int w, int h);
 
-__global__ void compute_grid(
-    float* coords, int len, float* delta, int delta_len, float scale, int W, int H, float* output);
+__global__ void compute_grid(const float* coords,
+                             int          len,
+                             const float* delta,
+                             int          delta_len,
+                             float        scale,
+                             int          W,
+                             int          H,
+                             float*       output);
 
-void broadcast_add(
-    float* corrds, int len, float* delta, int delta_len, int iter, int W, int H, float* output);
+void broadcast_add(const float* corrds,
+                   int          len,
+                   const float* delta,
+                   int          delta_len,
+                   int          iter,
+                   int          W,
+                   int          H,
+                   float*       output);

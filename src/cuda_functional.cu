@@ -1,3 +1,5 @@
+#include <cmath>
+
 #include "cuda_functional.hpp"
 
 // CUDA 内核函数定义
@@ -149,8 +151,14 @@ void create_coords_grid(float* d_coords, int w, int h, cudaStream_t stream = 0)
     // Generate delta
     generate_coords_grid<<<gridDim, blockDim, 0, stream>>>(d_coords, w, h);
 }
-__global__ void compute_grid(
-    float* coords, int len, float* delta, int delta_len, float scale, int W, int H, float* output)
+__global__ void compute_grid(const float* coords,
+                             int          len,
+                             const float* delta,
+                             int          delta_len,
+                             float        scale,
+                             int          W,
+                             int          H,
+                             float*       output)
 {
     int idx = blockIdx.x * blockDim.x + threadIdx.x;
 
@@ -162,7 +170,7 @@ __global__ void compute_grid(
         int   offset   = 2 * delta_len * idx;
         float x_factor = 2.0f / (W - 1);
         float y_factor = 2.0f / (H - 1);
-        for (size_t i = 0; i < delta_len; ++i)
+        for (int i = 0; i < delta_len; ++i)
         {
             float ax                   = x_factor * (x + delta[2 * i]);
             float ay                   = y_factor * (y + delta[2 * i + 1]);
@@ -172,11 +180,17 @@ __global__ void compute_grid(
     }
 }
 
-void broadcast_add(
-    float* coords, int len, float* delta, int delta_len, int iter, int W, int H, float* output)
+void broadcast_add(const float* coords,
+                   int          len,
+                   const float* delta,
+                   int          delta_len,
+                   int          iter,
+                   int          W,
+                   int          H,
+                   float*       output)
 {
-    float  scale             = 1.0f / (2 << iter);
-    size_t block_per_threads = 256;
+    float  scale             = 1.0f / std::pow(2, (iter - 1));
+    size_t block_per_threads = 16;
     compute_grid<<<(len + block_per_threads - 1) / block_per_threads, block_per_threads>>>(
         coords, len, delta, delta_len, scale, W, H, output);
 }
