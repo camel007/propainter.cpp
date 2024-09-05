@@ -2,7 +2,7 @@
 
 #include "cuda_functional.hpp"
 
-namespace raft
+namespace ferrari
 {
 CorrBlock::CorrBlock(int batch, int dim, int ht, int wd, int num_levels, int radius)
     : batch_(batch), dim_(dim), ht_(ht), wd_(wd), num_levels_(num_levels), radius_(radius)
@@ -61,7 +61,7 @@ int CorrBlock::computeCorr(const float* fmap1, const float* fmap2)
                     m);
     }
 
-    buildCorrPyramid();
+    // buildCorrPyramid();
 
     return 0;
 }
@@ -136,4 +136,4 @@ int CorrBlock::call(const float* coords, float* output)
     return ret;
 }
 
-}  // namespace raft
+}  // namespace ferrari

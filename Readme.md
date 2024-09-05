@@ -5,7 +5,10 @@ cuda implementation of [RAFT: Recurrent All Pairs Field Transforms for Optical F
 
 ## Requirments  
 
-- [Catch2](https://github.com/catchorg/Catch2) - For unit test  
+- [Catch2](https://github.com/catchorg/Catch2)   
+- [glog](https://github.com/google/glog)  
 
 
+## Acknowledgments  
 
+Special thanks to the [Caffe](https://github.com/BVLC/caffe) project for providing inspiration and portions of the implementation for this code.

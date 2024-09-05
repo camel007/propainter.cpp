@@ -6,7 +6,7 @@
 #include <thrust/functional.h>
 #include <thrust/transform.h>
 
-namespace raft
+namespace ferrari
 {
 
 class CorrBlock
@@ -33,4 +33,4 @@ private:
     float*              delta_lvl_;
 };
 
-}  // namespace raft
+}  // namespace ferrari

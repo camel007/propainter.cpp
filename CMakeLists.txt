@@ -19,6 +19,8 @@ enable_language(CUDA)
 
 # 查找 CUDA 包
 find_package(CUDAToolkit REQUIRED)
+find_package (glog REQUIRED)
+
 
 # 查找 cuDNN
 find_library(CUDNN_LIBRARY cudnn
@@ -54,15 +56,17 @@ set_target_properties(${PROJECT_NAME}_shared PROPERTIES
 target_link_libraries(${PROJECT_NAME}_static PRIVATE 
     CUDA::cudart
     ${CUDNN_LIBRARY}
-    ${CUBLAS_LIBRARY})
+    ${CUBLAS_LIBRARY} 
+    glog::glog z)
 
 target_link_libraries(${PROJECT_NAME}_shared PRIVATE 
     CUDA::cudart
     ${CUDNN_LIBRARY}
-    ${CUBLAS_LIBRARY})
+    ${CUBLAS_LIBRARY} 
+    glog::glog z)
 
-# # 添加 examples 子目录
-# add_subdirectory(examples)
+# 添加 examples 子目录
+add_subdirectory(examples)
 
 # 添加测试子目录
 add_subdirectory(test)

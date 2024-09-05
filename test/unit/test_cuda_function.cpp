@@ -6,6 +6,8 @@
 
 #include "cuda_functional.hpp"
 
+using Catch::Approx;
+
 TEST_CASE("grid_sample 基本功能测试", "[grid_sample]")
 {
     // 设置输入参数
@@ -76,9 +78,6 @@ TEST_CASE("grid_sample 基本功能测试", "[grid_sample]")
     cudaFree(d_grid);
     cudaFree(d_output);
 }
-
-// ... 现有代码 ...
-
 TEST_CASE("grid_sample resize 测试", "[grid_sample]")
 {
     // 设置输入参数
@@ -388,7 +387,6 @@ TEST_CASE("grid_sample zoom 测试", "[grid_sample]")
     cudaFree(d_grid);
     cudaFree(d_output);
 }
-
 TEST_CASE("Test broadcast_add function", "[cuda]")
 {
     std::vector<float> h_coords = {0.31507110595703125,
@@ -476,7 +474,7 @@ TEST_CASE("Test broadcast_add function", "[cuda]")
     {
         for (int i = 0; i < h_output.size(); ++i)
         {
-            REQUIRE(h_output[i] == Catch::Approx(h_expected_output[i]).epsilon(0.01f));
+            REQUIRE(h_output[i] == Catch::Approx(h_expected_output[i] - 1.0f).epsilon(0.01f));
         }
     }
 
@@ -484,4 +482,72 @@ TEST_CASE("Test broadcast_add function", "[cuda]")
     REQUIRE(cudaFree(d_coords) == cudaSuccess);
     REQUIRE(cudaFree(d_delta) == cudaSuccess);
     REQUIRE(cudaFree(d_output) == cudaSuccess);
+}
+TEST_CASE("create_delta generates correct delta values", "[cuda]")
+{
+    const int r              = 2;
+    const int size           = 2 * r + 1;
+    const int total_elements = size * size * 2;
+
+    // 在设备上分配内存
+    float* d_delta;
+    cudaMalloc(&d_delta, total_elements * sizeof(float));
+
+    // 调用create_delta函数
+    cudaStream_t stream = nullptr;
+    create_delta(d_delta, r, stream);
+
+    // 将结果复制回主机
+    float* h_delta = new float[total_elements];
+    cudaMemcpy(h_delta, d_delta, total_elements * sizeof(float), cudaMemcpyDeviceToHost);
+
+    // 验证结果
+    for (int y = 0; y < size; ++y)
+    {
+        for (int x = 0; x < size; ++x)
+        {
+            int   idx         = y * size + x;
+            float expected_dx = -r + x * (2.0f * r / (size - 1));
+            float expected_dy = -r + y * (2.0f * r / (size - 1));
+
+            REQUIRE(h_delta[idx * 2] == Catch::Approx(expected_dx));
+            REQUIRE(h_delta[idx * 2 + 1] == Catch::Approx(expected_dy));
+        }
+    }
+
+    // 清理内存
+    delete[] h_delta;
+    cudaFree(d_delta);
+}
+TEST_CASE("create_coords_grid generate coords", "[cuda]")
+{
+    const int w    = 4;
+    const int h    = 3;
+    const int size = w * h * 2;
+
+    // 在设备上分配内存
+    float* d_coords;
+    cudaMalloc(&d_coords, size * sizeof(float));
+
+    // 调用被测试的函数
+    create_coords_grid(d_coords, w, h);
+
+    // 将结果从设备复制到主机
+    float* h_coords = new float[size];
+    cudaMemcpy(h_coords, d_coords, size * sizeof(float), cudaMemcpyDeviceToHost);
+
+    // 验证结果
+    for (int y = 0; y < h; ++y)
+    {
+        for (int x = 0; x < w; ++x)
+        {
+            int idx = (y * w + x) * 2;
+            REQUIRE(h_coords[idx] == x);
+            REQUIRE(h_coords[idx + 1] == y);
+        }
+    }
+
+    // 清理内存
+    delete[] h_coords;
+    cudaFree(d_coords);
 }

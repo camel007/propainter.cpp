@@ -143,7 +143,7 @@ __global__ void generate_coords_grid(float* coords, int w, int h)
     }
 }
 
-void create_coords_grid(float* d_coords, int w, int h, cudaStream_t stream = 0)
+void create_coords_grid(float* d_coords, int w, int h, cudaStream_t stream)
 {
     dim3 blockDim(16, 16);
     dim3 gridDim((w + blockDim.x - 1) / blockDim.x, (h + blockDim.y - 1) / blockDim.y);
@@ -151,6 +151,7 @@ void create_coords_grid(float* d_coords, int w, int h, cudaStream_t stream = 0)
     // Generate delta
     generate_coords_grid<<<gridDim, blockDim, 0, stream>>>(d_coords, w, h);
 }
+
 __global__ void compute_grid(const float* coords,
                              int          len,
                              const float* delta,
@@ -174,8 +175,8 @@ __global__ void compute_grid(const float* coords,
         {
             float ax                   = x_factor * (x + delta[2 * i]);
             float ay                   = y_factor * (y + delta[2 * i + 1]);
-            output[offset + 2 * i]     = ax;
-            output[offset + 2 * i + 1] = ay;
+            output[offset + 2 * i]     = ax - 1.0f;
+            output[offset + 2 * i + 1] = ay - 1.0f;
         }
     }
 }

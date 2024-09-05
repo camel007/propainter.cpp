@@ -1,3 +1,5 @@
+#pragma once
+
 #include <cuda_runtime.h>
 
 __global__ void grid_sample_kernel(const float* __restrict__ input,
@@ -24,7 +26,7 @@ void            create_delta(float* d_delta, int r, cudaStream_t stream = 0);
 
 __global__ void generate_coords_grid(float* grid, int w, int h);
 
-void create_coords_grid(float* grid, int w, int h);
+void create_coords_grid(float* grid, int w, int h, cudaStream_t stream = 0);
 
 __global__ void compute_grid(const float* coords,
                              int          len,
