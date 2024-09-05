@@ -1,4 +1,4 @@
-# Raft  
+# ProPainter.cpp  
 
 cuda implementation of [ProPainter: Improving Propagation and Transformer for Video Inpainting](https://github.com/sczhou/ProPainter)  
 
