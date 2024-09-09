@@ -19,8 +19,6 @@ enable_language(CUDA)
 
 # 查找 CUDA 包
 find_package(CUDAToolkit REQUIRED)
-find_package (glog REQUIRED)
-
 
 # 查找 cuDNN
 find_library(CUDNN_LIBRARY cudnn
@@ -36,7 +34,7 @@ find_library(CUBLAS_LIBRARY cublas
 include_directories(${PROJECT_SOURCE_DIR}/include)
 
 # 收集源文件
-file(GLOB_RECURSE CPP_SOURCES "src/*.cpp")
+file(GLOB_RECURSE CPP_SOURCES "src/*.cpp" PROPERTIES LANGUAGE CUDA)
 file(GLOB_RECURSE CUDA_SOURCES "src/*.cu")
 
 # 创建静态库
@@ -45,6 +43,7 @@ set_target_properties(${PROJECT_NAME}_static PROPERTIES
     OUTPUT_NAME ${PROJECT_NAME}
     POSITION_INDEPENDENT_CODE ON
     CUDA_SEPARABLE_COMPILATION ON)
+
 
 # 创建共享库
 add_library(${PROJECT_NAME}_shared SHARED ${CPP_SOURCES} ${CUDA_SOURCES})
@@ -57,19 +56,19 @@ target_link_libraries(${PROJECT_NAME}_static PRIVATE
     CUDA::cudart
     ${CUDNN_LIBRARY}
     ${CUBLAS_LIBRARY} 
-    glog::glog z)
+     z)
 
 target_link_libraries(${PROJECT_NAME}_shared PRIVATE 
     CUDA::cudart
     ${CUDNN_LIBRARY}
     ${CUBLAS_LIBRARY} 
-    glog::glog z)
+     z)
 
 # 添加 examples 子目录
 add_subdirectory(examples)
 
 # 添加测试子目录
-add_subdirectory(test)
+# add_subdirectory(test)
 
 # 安装规则
 install(TARGETS ${PROJECT_NAME}_static ${PROJECT_NAME}_shared

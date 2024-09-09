@@ -7,7 +7,7 @@
 
 #include "common.hpp"
 #include "device_alternate.hpp"
-#include "glog/logging.h"
+#include "simple_log.hpp"
 
 namespace ferrari
 {
