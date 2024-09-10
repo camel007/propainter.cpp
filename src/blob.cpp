@@ -10,7 +10,6 @@
 
 namespace ferrari
 {
-
 template <typename Dtype>
 void Blob<Dtype>::Reshape(const int num, const int channels, const int height, const int width)
 {
@@ -184,11 +183,11 @@ template <typename Dtype>
 void Blob<Dtype>::LoadFromNPY(const std::string& filename)
 {
     cnpy::NpyArray array = cnpy::npy_load(filename);
-    
-    std::vector<int> sh;
-    for(auto & s : array.shape){
-        sh.push_back((int)s);
-    }
+
+    std::vector<int> sh(array.shape.size());
+    std::transform(array.shape.begin(), array.shape.end(), sh.begin(), [](size_t s) {
+        return static_cast<int>(s);
+    });
     Reshape(sh);
 
     Dtype*       ptr  = (Dtype*)data_->mutable_cpu_data();
@@ -203,15 +202,12 @@ void Blob<Dtype>::SaveToNPY(const std::string& filename)
 {
     const Dtype* ptr = (Dtype*)data_->cpu_data();
 
-    std::vector<size_t> sh;
-    for(const auto &s : shape_){
-        sh.push_back((size_t)s);
-    }
+    std::vector<size_t> sh(shape_.size());
+    std::transform(
+        shape_.begin(), shape_.end(), sh.begin(), [](int s) { return static_cast<size_t>(s); });
 
-    cnpy::npy_save<Dtype>(
-        filename,
-        ptr,
-        sh);
+    cnpy::npy_save<Dtype>(filename, ptr, sh);
+
     return;
 }
 
