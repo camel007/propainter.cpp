@@ -2,9 +2,8 @@
 
 #include <cublas_v2.h>
 #include <cudnn.h>
-#include <thrust/device_vector.h>
-#include <thrust/functional.h>
-#include <thrust/transform.h>
+
+#include <vector>
 
 namespace ferrari
 {

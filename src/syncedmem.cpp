@@ -123,7 +123,7 @@ const void* SyncedMemory::cpu_data()
 void SyncedMemory::set_cpu_data(void* data)
 {
     check_device();
-    CHECK(data);
+    FCHECK(data);
     if (own_cpu_data_)
     {
         CaffeFreeHost(cpu_ptr_, cpu_malloc_use_cuda_);
@@ -149,7 +149,7 @@ void SyncedMemory::set_gpu_data(void* data)
 {
     check_device();
 #ifndef CPU_ONLY
-    CHECK(data);
+    FCHECK(data);
     if (own_gpu_data_)
     {
         CUDA_CHECK(cudaFree(gpu_ptr_));
@@ -187,7 +187,7 @@ void* SyncedMemory::mutable_gpu_data()
 void SyncedMemory::async_gpu_push(const cudaStream_t& stream)
 {
     check_device();
-    CHECK(head_ == HEAD_AT_CPU);
+    FCHECK(head_ == HEAD_AT_CPU);
     if (gpu_ptr_ == NULL)
     {
         CUDA_CHECK(cudaMalloc(&gpu_ptr_, size_));
@@ -206,12 +206,12 @@ void SyncedMemory::check_device()
 #ifdef DEBUG
     int device;
     cudaGetDevice(&device);
-    CHECK(device == device_);
+    FCHECK(device == device_);
     if (gpu_ptr_ && own_gpu_data_)
     {
         cudaPointerAttributes attributes;
         CUDA_CHECK(cudaPointerGetAttributes(&attributes, gpu_ptr_));
-        CHECK(attributes.device == device_);
+        FCHECK(attributes.device == device_);
     }
 #endif
 #endif

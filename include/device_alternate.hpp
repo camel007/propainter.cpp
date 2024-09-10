@@ -4,33 +4,24 @@
 #include <cublas_v2.h>
 #include <cuda.h>
 #include <cuda_runtime.h>
-#include <curand.h>
 #include <driver_types.h>  // cuda driver types
-#ifdef USE_CUDNN           // cuDNN acceleration library.
-#include "caffe/util/cudnn.hpp"
-#endif
+
+#include "simple_log.hpp"
 
 // CUDA: various checks for different function calls.
-#define CUDA_CHECK(condition)                                             \
-    /* Code block avoids redefinition of cudaError_t error */             \
-    do                                                                    \
-    {                                                                     \
-        cudaError_t error = condition;                                    \
-        CHECK_EQ(error, cudaSuccess) << " " << cudaGetErrorString(error); \
+#define CUDA_CHECK(condition)                                              \
+    /* Code block avoids redefinition of cudaError_t error */              \
+    do                                                                     \
+    {                                                                      \
+        cudaError_t error = condition;                                     \
+        FCHECK_EQ(error, cudaSuccess) << " " << cudaGetErrorString(error); \
     } while (0)
 
-#define CUBLAS_CHECK(condition)                                                                \
-    do                                                                                         \
-    {                                                                                          \
-        cublasStatus_t status = condition;                                                     \
-        CHECK_EQ(status, CUBLAS_STATUS_SUCCESS) << " " << caffe::cublasGetErrorString(status); \
-    } while (0)
-
-#define CURAND_CHECK(condition)                                                                \
-    do                                                                                         \
-    {                                                                                          \
-        curandStatus_t status = condition;                                                     \
-        CHECK_EQ(status, CURAND_STATUS_SUCCESS) << " " << caffe::curandGetErrorString(status); \
+#define CUBLAS_CHECK(condition)                                                                   \
+    do                                                                                            \
+    {                                                                                             \
+        cublasStatus_t status = condition;                                                        \
+        FCHECK_EQ(status, CUBLAS_STATUS_SUCCESS) << " " << ferrari::cublasGetErrorString(status); \
     } while (0)
 
 // CUDA: grid stride looping
@@ -45,7 +36,6 @@ namespace ferrari
 
 // CUDA: library error reporting.
 const char* cublasGetErrorString(cublasStatus_t error);
-const char* curandGetErrorString(curandStatus_t error);
 
 // CUDA: use 512 threads per block
 const int CAFFE_CUDA_NUM_THREADS = 512;

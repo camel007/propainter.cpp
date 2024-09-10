@@ -5,6 +5,7 @@
 
 #include "common.hpp"
 #include "math_functions.hpp"
+#include "npy.hpp"
 #include "syncedmem.hpp"
 
 namespace ferrari
@@ -24,7 +25,7 @@ void Blob<Dtype>::Reshape(const int num, const int channels, const int height, c
 template <typename Dtype>
 void Blob<Dtype>::Reshape(const vector<int>& shape)
 {
-    CHECK_LE(shape.size(), kMaxBlobAxes);
+    FCHECK_LE(shape.size(), kMaxBlobAxes);
     count_ = 1;
     shape_.resize(shape.size());
     if (!shape_data_ || shape_data_->size() < shape.size() * sizeof(int))
@@ -34,10 +35,10 @@ void Blob<Dtype>::Reshape(const vector<int>& shape)
     int* shape_data = static_cast<int*>(shape_data_->mutable_cpu_data());
     for (int i = 0; i < shape.size(); ++i)
     {
-        CHECK_GE(shape[i], 0);
+        FCHECK_GE(shape[i], 0);
         if (count_ != 0)
         {
-            CHECK_LE(shape[i], INT_MAX / count_) << "blob size exceeds INT_MAX";
+            FCHECK_LE(shape[i], INT_MAX / count_) << "blob size exceeds INT_MAX";
         }
         count_ *= shape[i];
         shape_[i]     = shape[i];
@@ -53,7 +54,7 @@ void Blob<Dtype>::Reshape(const vector<int>& shape)
 template <typename Dtype>
 void Blob<Dtype>::Reshape(const BlobShape& shape)
 {
-    CHECK_LE(shape.dim_size(), kMaxBlobAxes);
+    FCHECK_LE(shape.dim_size(), kMaxBlobAxes);
     vector<int> shape_vec(shape.dim_size());
     for (int i = 0; i < shape.dim_size(); ++i)
     {
@@ -87,21 +88,21 @@ Blob<Dtype>::Blob(const vector<int>& shape)
 template <typename Dtype>
 const int* Blob<Dtype>::gpu_shape() const
 {
-    CHECK(shape_data_);
+    FCHECK(shape_data_);
     return (const int*)shape_data_->gpu_data();
 }
 
 template <typename Dtype>
 const Dtype* Blob<Dtype>::cpu_data() const
 {
-    CHECK(data_);
+    FCHECK(data_);
     return (const Dtype*)data_->cpu_data();
 }
 
 template <typename Dtype>
 void Blob<Dtype>::set_cpu_data(Dtype* data)
 {
-    CHECK(data);
+    FCHECK(data);
     // Make sure CPU and GPU sizes remain equal
     size_t size = count_ * sizeof(Dtype);
     if (data_->size() != size)
@@ -114,14 +115,14 @@ void Blob<Dtype>::set_cpu_data(Dtype* data)
 template <typename Dtype>
 const Dtype* Blob<Dtype>::gpu_data() const
 {
-    CHECK(data_);
+    FCHECK(data_);
     return (const Dtype*)data_->gpu_data();
 }
 
 template <typename Dtype>
 void Blob<Dtype>::set_gpu_data(Dtype* data)
 {
-    CHECK(data);
+    FCHECK(data);
     // Make sure CPU and GPU sizes remain equal
     size_t size = count_ * sizeof(Dtype);
     if (data_->size() != size)
@@ -134,21 +135,21 @@ void Blob<Dtype>::set_gpu_data(Dtype* data)
 template <typename Dtype>
 Dtype* Blob<Dtype>::mutable_cpu_data()
 {
-    CHECK(data_);
+    FCHECK(data_);
     return static_cast<Dtype*>(data_->mutable_cpu_data());
 }
 
 template <typename Dtype>
 Dtype* Blob<Dtype>::mutable_gpu_data()
 {
-    CHECK(data_);
+    FCHECK(data_);
     return static_cast<Dtype*>(data_->mutable_gpu_data());
 }
 
 template <typename Dtype>
 void Blob<Dtype>::ShareData(const Blob& other)
 {
-    CHECK_EQ(count_, other.count());
+    FCHECK_EQ(count_, other.count());
     data_ = other.data();
 }
 
@@ -177,6 +178,41 @@ void Blob<Dtype>::CopyFrom(const Blob& source, bool reshape)
         default:
             LOG(FATAL) << "Unknown caffe mode.";
     }
+}
+
+template <typename Dtype>
+void Blob<Dtype>::LoadFromNPY(const std::string& filename)
+{
+    cnpy::NpyArray array = cnpy::npy_load(filename);
+    
+    std::vector<int> sh;
+    for(auto & s : array.shape){
+        sh.push_back((int)s);
+    }
+    Reshape(sh);
+
+    Dtype*       ptr  = (Dtype*)data_->mutable_cpu_data();
+    const Dtype* data = array.data<Dtype>();
+    std::copy(data, data + count_, ptr);
+
+    return;
+}
+
+template <typename Dtype>
+void Blob<Dtype>::SaveToNPY(const std::string& filename)
+{
+    const Dtype* ptr = (Dtype*)data_->cpu_data();
+
+    std::vector<size_t> sh;
+    for(const auto &s : shape_){
+        sh.push_back((size_t)s);
+    }
+
+    cnpy::npy_save<Dtype>(
+        filename,
+        ptr,
+        sh);
+    return;
 }
 
 INSTANTIATE_CLASS(Blob);

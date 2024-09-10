@@ -1,8 +1,6 @@
 #ifndef CAFFE_COMMON_HPP_
 #define CAFFE_COMMON_HPP_
 
-#include <glog/logging.h>
-
 #include <climits>
 #include <cmath>
 #include <fstream>   // NOLINT(readability/streams)
@@ -16,6 +14,7 @@
 #include <vector>
 
 #include "device_alternate.hpp"
+#include "simple_log.hpp"
 
 // Convert macro to string
 #define STRINGIFY(m) #m
@@ -51,10 +50,6 @@ using std::string;
 using std::stringstream;
 using std::vector;
 
-// A global initialization function that you should call in your main function.
-// Currently it initializes google flags and google logging.
-void GlobalInit(int* pargc, char*** pargv);
-
 // A singleton class to hold common caffe stuff, such as the handler that
 // caffe is going to use for cublas, curand, etc.
 class Caffe
@@ -62,9 +57,6 @@ class Caffe
 public:
     ~Caffe();
 
-    // Thread local context for Caffe. Moved to common.cpp instead of
-    // including boost/thread.hpp to avoid a boost/NVCC issues (#1009, #1010)
-    // on OSX. Also fails on Linux with CUDA 7.0.18.
     static Caffe& Get();
 
     enum Brew
@@ -73,10 +65,7 @@ public:
         GPU
     };
 
-#ifndef CPU_ONLY
-    inline static cublasHandle_t    cublas_handle() { return Get().cublas_handle_; }
-    inline static curandGenerator_t curand_generator() { return Get().curand_generator_; }
-#endif
+    inline static cublasHandle_t cublas_handle() { return Get().cublas_handle_; }
 
     // Returns the mode: running on CPU or GPU.
     inline static Brew mode() { return Get().mode_; }
@@ -100,17 +89,9 @@ public:
     static int FindDevice(const int start_id = 0);
 
 protected:
-#ifndef CPU_ONLY
-    cublasHandle_t    cublas_handle_;
-    curandGenerator_t curand_generator_;
-#endif
+    cublasHandle_t cublas_handle_;
 
     Brew mode_;
-
-    // Parallel training
-    int  solver_count_;
-    int  solver_rank_;
-    bool multiprocess_;
 
 private:
     // The private constructor to avoid duplicate instantiation.

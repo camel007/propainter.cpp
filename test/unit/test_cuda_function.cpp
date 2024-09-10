@@ -1,6 +1,4 @@
 #define CATCH_CONFIG_MAIN
-#include <cuda_runtime.h>
-
 #include <catch2/catch_all.hpp>
 #include <catch2/catch_approx.hpp>
 
