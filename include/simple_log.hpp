@@ -67,12 +67,36 @@ private:
 #define LOG_IF(level, condition) SimpleLog(level, (condition))
 
 // Simple CHECK macro
-#define CHECK(condition) LOG_IF(FATAL, !(condition)) << "Check failed: " #condition " "
+#define FCHECK(condition) LOG_IF(FATAL, !(condition)) << "Check failed: " #condition " "
 
 // CHECK_EQ and other checks
-#define CHECK_EQ(val1, val2)                                                                     \
+#define FCHECK_EQ(val1, val2)                                                                    \
     if ((val1) != (val2))                                                                        \
     SimpleLog(FATAL) << "Check failed: " << #val1 << " == " << #val2 << " (" << (val1) << " vs " \
+                     << (val2) << ")"
+
+// CHECK_LT and other checks
+#define FCHECK_LT(val1, val2)                                                                   \
+    if ((val1) >= (val2))                                                                       \
+    SimpleLog(FATAL) << "Check failed: " << #val1 << " < " << #val2 << " (" << (val1) << " vs " \
+                     << (val2) << ")"
+
+// CHECK_LE and other checks
+#define FCHECK_LE(val1, val2)                                                                    \
+    if ((val1) > (val2))                                                                         \
+    SimpleLog(FATAL) << "Check failed: " << #val1 << " <= " << #val2 << " (" << (val1) << " vs " \
+                     << (val2) << ")"
+
+// CHECK_GE and other checks
+#define FCHECK_GE(val1, val2)                                                                    \
+    if ((val1) < (val2))                                                                         \
+    SimpleLog(FATAL) << "Check failed: " << #val1 << " >= " << #val2 << " (" << (val1) << " vs " \
+                     << (val2) << ")"
+
+// CHECK_GT and other checks
+#define FCHECK_GT(val1, val2)                                                                    \
+    if ((val1) <= (val2))                                                                        \
+    SimpleLog(FATAL) << "Check failed: " << #val1 << " >= " << #val2 << " (" << (val1) << " vs " \
                      << (val2) << ")"
 
 // Logging macros for different levels

@@ -89,6 +89,10 @@
         "stack": "cpp",
         "__functional_base": "cpp",
         "locale": "cpp",
-        "cinttypes": "cpp"
+        "cinttypes": "cpp",
+        "csignal": "cpp",
+        "strstream": "cpp",
+        "list": "cpp",
+        "__tuple": "cpp"
     }
 }

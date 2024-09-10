@@ -9,19 +9,19 @@
 #include "simple_log.hpp"
 
 // CUDA: various checks for different function calls.
-#define CUDA_CHECK(condition)                                             \
-    /* Code block avoids redefinition of cudaError_t error */             \
-    do                                                                    \
-    {                                                                     \
-        cudaError_t error = condition;                                    \
-        CHECK_EQ(error, cudaSuccess) << " " << cudaGetErrorString(error); \
+#define CUDA_CHECK(condition)                                              \
+    /* Code block avoids redefinition of cudaError_t error */              \
+    do                                                                     \
+    {                                                                      \
+        cudaError_t error = condition;                                     \
+        FCHECK_EQ(error, cudaSuccess) << " " << cudaGetErrorString(error); \
     } while (0)
 
-#define CUBLAS_CHECK(condition)                                                                  \
-    do                                                                                           \
-    {                                                                                            \
-        cublasStatus_t status = condition;                                                       \
-        CHECK_EQ(status, CUBLAS_STATUS_SUCCESS) << " " << ferrari::cublasGetErrorString(status); \
+#define CUBLAS_CHECK(condition)                                                                   \
+    do                                                                                            \
+    {                                                                                             \
+        cublasStatus_t status = condition;                                                        \
+        FCHECK_EQ(status, CUBLAS_STATUS_SUCCESS) << " " << ferrari::cublasGetErrorString(status); \
     } while (0)
 
 // CUDA: grid stride looping

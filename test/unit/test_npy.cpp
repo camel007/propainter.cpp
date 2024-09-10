@@ -1,5 +1,4 @@
 #define CATCH_CONFIG_MAIN
-#include <cuda_runtime.h>
 
 #include <catch2/catch_all.hpp>
 #include <catch2/catch_approx.hpp>
@@ -9,57 +8,46 @@
 #include <map>
 #include <string>
 
+#include "blob.hpp"
 #include "npy.hpp"
 
 const int Nx = 128;
 const int Ny = 64;
 const int Nz = 32;
-
-TEST_CASE("npy test", "[test_npy]")
+TEST_CASE("blob test", "[test_blob]")
 {
-    // set random seed so that result is reproducible (for testing)
-    srand(0);
-    // create random data
-    std::vector<std::complex<double>> data(Nx * Ny * Nz);
-    for (int i = 0; i < Nx * Ny * Nz; i++)
-        data[i] = std::complex<double>(rand(), rand());
+    float matrix[] = {0.77891346,
+                      0.17474553,
+                      0.74379612,
+                      0.03985735,
+                      0.70188098,
+                      0.05263425,
+                      0.44053011,
+                      0.09026388,
+                      0.29514856,
+                      0.51547146,
+                      0.82821231,
+                      0.28403936,
+                      0.55605025,
+                      0.46127602,
+                      0.24216507};
 
-    // save it to file
-    cnpy::npy_save("arr1.npy", &data[0], {Nz, Ny, Nx}, "w");
+    ferrari::Blob<float> b;
+    b.LoadFromNPY("test_data/3x5.npy");
+    REQUIRE(sizeof(matrix) / sizeof(float) == b.count());
+    const float* data = b.cpu_data();
 
-    // load it into a new array
-    cnpy::NpyArray        arr         = cnpy::npy_load("arr1.npy");
-    std::complex<double>* loaded_data = arr.data<std::complex<double>>();
+    for (size_t i = 0; i < b.count(); ++i)
+    {
+        REQUIRE(data[i] == matrix[i]);
+    }
 
-    // make sure the loaded data matches the saved data
-    assert(arr.word_size == sizeof(std::complex<double>));
-    assert(arr.shape.size() == 3 && arr.shape[0] == Nz && arr.shape[1] == Ny && arr.shape[2] == Nx);
-    for (int i = 0; i < Nx * Ny * Nz; i++)
-        REQUIRE(data[i] == loaded_data[i]);
+    b.SaveToNPY("./temp.npy");
 
-    // append the same data to file
-    // npy array on file now has shape (Nz+Nz,Ny,Nx)
-    cnpy::npy_save("arr1.npy", &data[0], {Nz, Ny, Nx}, "a");
-
-    // now write to an npz file
-    // non-array variables are treated as 1D arrays with 1 element
-    double myVar1 = 1.2;
-    char   myVar2 = 'a';
-    cnpy::npz_save("out.npz", "myVar1", &myVar1, {1}, "w");  //"w" overwrites any existing file
-    cnpy::npz_save(
-        "out.npz", "myVar2", &myVar2, {1}, "a");  //"a" appends to the file we created above
-    cnpy::npz_save(
-        "out.npz", "arr1", &data[0], {Nz, Ny, Nx}, "a");  //"a" appends to the file we created above
-
-    // load a single var from the npz file
-    cnpy::NpyArray arr2 = cnpy::npz_load("out.npz", "arr1");
-
-    // load the entire npz file
-    cnpy::npz_t my_npz = cnpy::npz_load("out.npz");
-
-    // check that the loaded myVar1 matches myVar1
-    cnpy::NpyArray arr_mv1 = my_npz["myVar1"];
-    double*        mv1     = arr_mv1.data<double>();
-    assert(arr_mv1.shape.size() == 1 && arr_mv1.shape[0] == 1);
-    assert(mv1[0] == myVar1);
+    cnpy::NpyArray array = cnpy::npy_load("./temp.npy");
+    const float* d = array.data<float>();
+    for (size_t i = 0; i < b.count(); ++i)
+    {
+        REQUIRE(d[i] == matrix[i]);
+    }
 }

@@ -1,9 +1,10 @@
+set(CMAKE_PREFIX_PATH "/usr/local/lib/cmake")
 # 查找 Catch2
 find_package(Catch2 3 REQUIRED)
 include(Catch)
 
 # 收集测试源文件
-file(GLOB_RECURSE TEST_SOURCES "*.cpp")
+file(GLOB_RECURSE TEST_SOURCES "*.cpp" PROPERTIES LANGUAGE CUDA)
 
 # 为每个测试源文件创建一个独立的测试可执行文件
 foreach(TEST_SOURCE ${TEST_SOURCES})
@@ -21,7 +22,10 @@ foreach(TEST_SOURCE ${TEST_SOURCES})
     
     # 注册测试
     catch_discover_tests(${TEST_NAME})
-endforeach()
 
+    install(TARGETS ${TEST_NAME}
+            RUNTIME DESTINATION test)
+endforeach()
+install(DIRECTORY test_data/ DESTINATION test/test_data)
 # 添加测试
 include(CTest)
