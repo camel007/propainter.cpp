@@ -2,31 +2,18 @@
 
 #include <cuda_runtime.h>
 
-__global__ void grid_sample_kernel(const float* __restrict__ input,
-                                   const float* __restrict__ grid,
-                                   float* __restrict__ output,
-                                   int N,
-                                   int C,
-                                   int H_in,
-                                   int W_in,
-                                   int H_out,
-                                   int W_out);
-int             grid_sample(const float* input,
-                            const float* grid,
-                            float*       output,
-                            int          N,
-                            int          C,
-                            int          H_in,
-                            int          W_in,
-                            int          H_out,
-                            int          W_out);
+#include "blob.hpp"
 
-__global__ void generate_delta(float* delta, int r);
-void            create_delta(float* d_delta, int r, cudaStream_t stream = 0);
+namespace ferrari
+{
 
-__global__ void generate_coords_grid(float* grid, int w, int h);
+int grid_sample(std::shared_ptr<Blob<float>>& input,
+                std::shared_ptr<Blob<float>>& grid,
+                std::shared_ptr<Blob<float>>& output);
 
-void create_coords_grid(float* grid, int w, int h, cudaStream_t stream = 0);
+void create_delta(std::shared_ptr<Blob<float>>& delta, int r);
+
+void create_coords_grid(std::shared_ptr<Blob<float>>& coords);
 
 __global__ void compute_grid(const float* coords,
                              int          len,
@@ -37,11 +24,11 @@ __global__ void compute_grid(const float* coords,
                              int          H,
                              float*       output);
 
-void broadcast_add(const float* corrds,
-                   int          len,
-                   const float* delta,
-                   int          delta_len,
-                   int          iter,
-                   int          W,
-                   int          H,
-                   float*       output);
+void broadcast_add(const std::shared_ptr<Blob<float>>& coords,
+                   const std::shared_ptr<Blob<float>>& delta,
+                   int                                 iter,
+                   int                                 W,
+                   int                                 H,
+                   std::shared_ptr<Blob<float>>&       output);
+
+}  // namespace ferrari

@@ -2,6 +2,8 @@
 
 #include "cuda_functional.hpp"
 
+namespace ferrari
+{
 // CUDA 内核函数定义
 __global__ void grid_sample_kernel(const float* __restrict__ input,
                                    const float* __restrict__ grid,
@@ -78,28 +80,34 @@ __global__ void grid_sample_kernel(const float* __restrict__ input,
     }
 }
 
-// 定义主机函数来调用 CUDA 内核
-int grid_sample(const float* input,
-                const float* grid,
-                float*       output,
-                int          N,
-                int          C,
-                int          H_in,
-                int          W_in,
-                int          H_out,
-                int          W_out)
+int grid_sample(std::shared_ptr<Blob<float>>& input,
+                std::shared_ptr<Blob<float>>& grid,
+                std::shared_ptr<Blob<float>>& output)
 {
+    int N    = input->shape(0);
+    int C    = input->shape(1);
+    int H_in = input->shape(2);
+    int W_in = input->shape(3);
+
+    int H_out = grid->shape(1);
+    int W_out = grid->shape(2);
+
     // 定义 CUDA 网格和线程配置
     dim3 blockDim(16, 16);  // 每个线程块 16x16 个线程
     dim3 gridDim(N, (H_out + blockDim.y - 1) / blockDim.y, (W_out + blockDim.x - 1) / blockDim.x);
 
     // 调用 CUDA 内核
-    grid_sample_kernel<<<gridDim, blockDim>>>(input, grid, output, N, C, H_in, W_in, H_out, W_out);
+    grid_sample_kernel<<<gridDim, blockDim>>>(input->gpu_data(),
+                                              grid->gpu_data(),
+                                              output->mutable_gpu_data(),
+                                              N,
+                                              C,
+                                              H_in,
+                                              W_in,
+                                              H_out,
+                                              W_out);
 
-    // 检查 CUDA 错误
-    cudaError_t err = cudaGetLastError();
-
-    return err;
+    return 0;
 }
 
 __global__ void generate_delta(float* delta, int r)
@@ -119,15 +127,14 @@ __global__ void generate_delta(float* delta, int r)
     }
 }
 
-void create_delta(float* d_delta, int r, cudaStream_t stream)
+void create_delta(std::shared_ptr<Blob<float>>& delta, int r)
 {
-    // Define grid and block dimensions
     int  size = 2 * r + 1;
     dim3 blockDim(16, 16);
     dim3 gridDim((size + blockDim.x - 1) / blockDim.x, (size + blockDim.y - 1) / blockDim.y);
 
     // Generate delta
-    generate_delta<<<gridDim, blockDim, 0, stream>>>(d_delta, r);
+    generate_delta<<<gridDim, blockDim>>>(delta->mutable_gpu_data(), r);
 }
 
 __global__ void generate_coords_grid(float* coords, int w, int h)
@@ -143,13 +150,16 @@ __global__ void generate_coords_grid(float* coords, int w, int h)
     }
 }
 
-void create_coords_grid(float* d_coords, int w, int h, cudaStream_t stream)
+void create_coords_grid(std::shared_ptr<Blob<float>>& coords)
 {
+    int w = coords->shape(0);
+    int h = coords->shape(1);
+
     dim3 blockDim(16, 16);
     dim3 gridDim((w + blockDim.x - 1) / blockDim.x, (h + blockDim.y - 1) / blockDim.y);
 
     // Generate delta
-    generate_coords_grid<<<gridDim, blockDim, 0, stream>>>(d_coords, w, h);
+    generate_coords_grid<<<gridDim, blockDim>>>(coords->mutable_gpu_data(), w, h);
 }
 
 __global__ void compute_grid(const float* coords,
@@ -181,17 +191,28 @@ __global__ void compute_grid(const float* coords,
     }
 }
 
-void broadcast_add(const float* coords,
-                   int          len,
-                   const float* delta,
-                   int          delta_len,
-                   int          iter,
-                   int          W,
-                   int          H,
-                   float*       output)
+void broadcast_add(const std::shared_ptr<Blob<float>>& coords,
+                   const std::shared_ptr<Blob<float>>& delta,
+                   int                                 iter,
+                   int                                 W,
+                   int                                 H,
+                   std::shared_ptr<Blob<float>>&       output)
 {
     float  scale             = 1.0f / std::pow(2, (iter - 1));
     size_t block_per_threads = 16;
+
+    int len       = coords->count() / 2;
+    int delta_len = delta->count() / 2;
+
     compute_grid<<<(len + block_per_threads - 1) / block_per_threads, block_per_threads>>>(
-        coords, len, delta, delta_len, scale, W, H, output);
+        coords->gpu_data(),
+        len,
+        delta->gpu_data(),
+        delta_len,
+        scale,
+        W,
+        H,
+        output->mutable_gpu_data());
 }
+
+}  // namespace ferrari

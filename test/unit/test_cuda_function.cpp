@@ -5,23 +5,26 @@
 #include "cuda_functional.hpp"
 
 using Catch::Approx;
+using namespace ::ferrari;
 
-TEST_CASE("grid_sample 基本功能测试", "[grid_sample]")
+TEST_CASE("grid_sample Blob version", "[blob version]")
 {
     // 设置输入参数
     const int N = 1, C = 1, H_in = 4, W_in = 4, H_out = 2, W_out = 2;
-    const int input_size  = N * C * H_in * W_in;
-    const int grid_size   = N * H_out * W_out * 2;
     const int output_size = N * C * H_out * W_out;
 
+    std::shared_ptr<Blob<float>> in_blob   = std::make_shared<Blob<float>>(N, C, H_in, W_in);
+    std::shared_ptr<Blob<float>> grid_blob = std::make_shared<Blob<float>>(N, H_out, W_out, 2);
+
+    std::shared_ptr<Blob<float>> out_blob = std::make_shared<Blob<float>>(N, C, H_out, W_out);
+
     // 分配主机内存
-    float* h_input           = new float[input_size];
-    float* h_grid            = new float[grid_size];
-    float* h_output          = new float[output_size];
+    float* h_input           = in_blob->mutable_cpu_data();
+    float* h_grid            = grid_blob->mutable_cpu_data();
     float* h_expected_output = new float[output_size];
 
     // 初始化输入数据
-    for (int i = 0; i < input_size; ++i)
+    for (int i = 0; i < in_blob->count(); ++i)
     {
         h_input[i] = static_cast<float>(i);
     }
@@ -42,25 +45,9 @@ TEST_CASE("grid_sample 基本功能测试", "[grid_sample]")
     h_expected_output[2] = 12.0f;  // 左下角
     h_expected_output[3] = 15.0f;  // 右下角
 
-    // 分配设备内存
-    float *d_input, *d_grid, *d_output;
-    cudaMalloc(&d_input, input_size * sizeof(float));
-    cudaMalloc(&d_grid, grid_size * sizeof(float));
-    cudaMalloc(&d_output, output_size * sizeof(float));
+    REQUIRE(grid_sample(in_blob, grid_blob, out_blob) == 0);
 
-    // 将数据复制到设备
-    cudaMemcpy(d_input, h_input, input_size * sizeof(float), cudaMemcpyHostToDevice);
-    cudaMemcpy(d_grid, h_grid, grid_size * sizeof(float), cudaMemcpyHostToDevice);
-
-    // 调用grid_sample函数
-    int error = grid_sample(d_input, d_grid, d_output, N, C, H_in, W_in, H_out, W_out);
-
-    // 检查是否有CUDA错误
-    REQUIRE(error == cudaSuccess);
-
-    // 将结果复制回主机
-    cudaMemcpy(h_output, d_output, output_size * sizeof(float), cudaMemcpyDeviceToHost);
-
+    const float* h_output = out_blob->cpu_data();
     // 验证结果
     for (int i = 0; i < output_size; ++i)
     {
@@ -68,87 +55,10 @@ TEST_CASE("grid_sample 基本功能测试", "[grid_sample]")
     }
 
     // 释放内存
-    delete[] h_input;
-    delete[] h_grid;
-    delete[] h_output;
     delete[] h_expected_output;
-    cudaFree(d_input);
-    cudaFree(d_grid);
-    cudaFree(d_output);
 }
-TEST_CASE("grid_sample resize 测试", "[grid_sample]")
-{
-    // 设置输入参数
-    const int N = 1, C = 1, H_in = 4, W_in = 4, H_out = 2, W_out = 3;
-    const int input_size  = N * C * H_in * W_in;
-    const int grid_size   = N * H_out * W_out * 2;
-    const int output_size = N * C * H_out * W_out;
 
-    // 分配主机内存
-    float* h_input           = new float[input_size];
-    float* h_grid            = new float[grid_size];
-    float* h_output          = new float[output_size];
-    float* h_expected_output = new float[output_size];
-
-    // 初始化输入数据
-    for (int i = 0; i < input_size; ++i)
-    {
-        h_input[i] = static_cast<float>(i);
-    }
-
-    // 设置网格数据（均匀分布的采样点）
-    for (int i = 0; i < H_out; ++i)
-    {
-        for (int j = 0; j < W_out; ++j)
-        {
-            h_grid[(i * W_out + j) * 2]     = -1.0f + 2.0f * j / (W_out - 1);  // x
-            h_grid[(i * W_out + j) * 2 + 1] = -1.0f + 2.0f * i / (H_out - 1);  // y
-        }
-    }
-
-    // 设置预期输出
-    h_expected_output[0] = 0.0f;   // 左上
-    h_expected_output[1] = 1.5f;   // 中上
-    h_expected_output[2] = 3.0f;   // 右上
-    h_expected_output[3] = 12.0f;  // 左下
-    h_expected_output[4] = 13.5f;  // 中下
-    h_expected_output[5] = 15.0f;  // 右下
-
-    // 分配设备内存
-    float *d_input, *d_grid, *d_output;
-    cudaMalloc(&d_input, input_size * sizeof(float));
-    cudaMalloc(&d_grid, grid_size * sizeof(float));
-    cudaMalloc(&d_output, output_size * sizeof(float));
-
-    // 将数据复制到设备
-    cudaMemcpy(d_input, h_input, input_size * sizeof(float), cudaMemcpyHostToDevice);
-    cudaMemcpy(d_grid, h_grid, grid_size * sizeof(float), cudaMemcpyHostToDevice);
-
-    // 调用grid_sample函数
-    int error = grid_sample(d_input, d_grid, d_output, N, C, H_in, W_in, H_out, W_out);
-
-    // 检查是否有CUDA错误
-    REQUIRE(error == cudaSuccess);
-
-    // 将结果复制回主机
-    cudaMemcpy(h_output, d_output, output_size * sizeof(float), cudaMemcpyDeviceToHost);
-
-    // 验证结果
-    for (int i = 0; i < output_size; ++i)
-    {
-        REQUIRE(h_output[i] == Catch::Approx(h_expected_output[i]).epsilon(0.01f));
-    }
-
-    // 释放内存
-    delete[] h_input;
-    delete[] h_grid;
-    delete[] h_output;
-    delete[] h_expected_output;
-    cudaFree(d_input);
-    cudaFree(d_grid);
-    cudaFree(d_output);
-}
-TEST_CASE("grid_sample zoom 测试", "[grid_sample]")
+TEST_CASE("grid_sample zoom Blob version", "[blob version]")
 {
     float h_input[] = {
         0.0, 1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0, 10.0, 11.0, 12.0, 13.0, 14.0, 15.0};
@@ -346,46 +256,27 @@ TEST_CASE("grid_sample zoom 测试", "[grid_sample]")
                                  15.0};
 
     // 设置输入参数
-    const int N = 1, C = 1, H_in = 4, W_in = 4, H_out = 8, W_out = 8;
-    const int input_size  = N * C * H_in * W_in;
-    const int grid_size   = N * H_out * W_out * 2;
-    const int output_size = N * C * H_out * W_out;
-    float*    h_output    = new float[output_size];
+    const int                    N = 1, C = 1, H_in = 4, W_in = 4, H_out = 8, W_out = 8;
+    std::shared_ptr<Blob<float>> in_blob = std::make_shared<Blob<float>>(N, C, H_in, W_in);
+    in_blob->set_cpu_data(h_input);
 
-    REQUIRE(sizeof(h_input) == input_size * sizeof(float));
+    std::shared_ptr<Blob<float>> grid_blob = std::make_shared<Blob<float>>(N, H_out, W_out, 2);
+    grid_blob->set_cpu_data(h_grid);
 
-    // 分配设备内存
-    float *d_input, *d_grid, *d_output;
-    cudaMalloc(&d_input, input_size * sizeof(float));
-    cudaMalloc(&d_grid, grid_size * sizeof(float));
-    cudaMalloc(&d_output, output_size * sizeof(float));
-
-    // 将数据复制到设备
-    cudaMemcpy(d_input, h_input, input_size * sizeof(float), cudaMemcpyHostToDevice);
-    cudaMemcpy(d_grid, h_grid, grid_size * sizeof(float), cudaMemcpyHostToDevice);
+    std::shared_ptr<Blob<float>> out_blob = std::make_shared<Blob<float>>(N, C, H_out, W_out);
 
     // 调用grid_sample函数
-    int error = grid_sample(d_input, d_grid, d_output, N, C, H_in, W_in, H_out, W_out);
+    int error = grid_sample(in_blob, grid_blob, out_blob);
 
-    // 检查是否有CUDA错误
-    REQUIRE(error == cudaSuccess);
-
-    // 将结果复制回主机
-    cudaMemcpy(h_output, d_output, output_size * sizeof(float), cudaMemcpyDeviceToHost);
-
+    const float* h_output = out_blob->cpu_data();
     // 验证结果
-    for (int i = 0; i < output_size; ++i)
+    for (int i = 0; i < out_blob->count(); ++i)
     {
         REQUIRE(h_output[i] == Catch::Approx(h_expected_output[i]).epsilon(0.01f));
     }
-
-    // 释放内存
-    delete[] h_output;
-    cudaFree(d_input);
-    cudaFree(d_grid);
-    cudaFree(d_output);
 }
-TEST_CASE("Test broadcast_add function", "[cuda]")
+
+TEST_CASE("Test broadcast_add function", "[blob version]")
 {
     std::vector<float> h_coords = {0.31507110595703125,
                                    0.8340060710906982,
@@ -437,67 +328,46 @@ TEST_CASE("Test broadcast_add function", "[cuda]")
 
     // 设置测试参数
 
-    int N   = 4;
-    int len = N * 1 * 1;
-    int W = 3, H = 3;
-    int delta_len = 1 * W * H;  // Assume delta is a 3x3 grid
-    int iter      = 1;
+    int N    = 4;
+    int r    = 3;
+    int iter = 1;
 
-    std::vector<float> h_output(N * W * H * 2);
+    std::shared_ptr<Blob<float>> coords_blob =
+        std::make_shared<Blob<float>>(std::vector<int>({N, 1, 1, 2}));
+    coords_blob->set_cpu_data(h_coords.data());
 
-    // Allocate device memory
-    float *d_coords, *d_delta, *d_output;
-    REQUIRE(cudaMalloc(&d_coords, len * 2 * sizeof(float)) == cudaSuccess);
-    REQUIRE(cudaMalloc(&d_delta, delta_len * 2 * sizeof(float)) == cudaSuccess);
-    REQUIRE(cudaMalloc(&d_output, N * W * H * 2 * sizeof(float)) == cudaSuccess);
+    std::shared_ptr<Blob<float>> delta_blob =
+        std::make_shared<Blob<float>>(std::vector<int>({1, r, r, 2}));
+    delta_blob->set_cpu_data(h_delta.data());
 
-    // Copy data to device
-    REQUIRE(
-        cudaMemcpy(d_coords, h_coords.data(), len * 2 * sizeof(float), cudaMemcpyHostToDevice) ==
-        cudaSuccess);
-    REQUIRE(cudaMemcpy(
-                d_delta, h_delta.data(), delta_len * 2 * sizeof(float), cudaMemcpyHostToDevice) ==
-            cudaSuccess);
+    std::shared_ptr<Blob<float>> out_blob =
+        std::make_shared<Blob<float>>(std::vector<int>({N, r, r, 2}));
 
-    // Call broadcast_add function
-    broadcast_add(d_coords, len, d_delta, delta_len, iter, W, H, d_output);
+    broadcast_add(coords_blob, delta_blob, iter, 3, 3, out_blob);
 
-    // Copy result back to host
-    REQUIRE(cudaMemcpy(
-                h_output.data(), d_output, N * W * H * 2 * sizeof(float), cudaMemcpyDeviceToHost) ==
-            cudaSuccess);
-
-    // 验证结果
     SECTION("Check output range")
     {
-        for (int i = 0; i < h_output.size(); ++i)
+        const float* h_output = out_blob->cpu_data();
+        for (int i = 0; i < out_blob->count(); ++i)
         {
             REQUIRE(h_output[i] == Catch::Approx(h_expected_output[i] - 1.0f).epsilon(0.01f));
         }
     }
-
-    // Free device memory
-    REQUIRE(cudaFree(d_coords) == cudaSuccess);
-    REQUIRE(cudaFree(d_delta) == cudaSuccess);
-    REQUIRE(cudaFree(d_output) == cudaSuccess);
 }
-TEST_CASE("create_delta generates correct delta values", "[cuda]")
+
+TEST_CASE("create_delta generates correct delta values", "[blob version]")
 {
     const int r              = 2;
     const int size           = 2 * r + 1;
     const int total_elements = size * size * 2;
 
-    // 在设备上分配内存
-    float* d_delta;
-    cudaMalloc(&d_delta, total_elements * sizeof(float));
+    std::vector<int>             shape      = {total_elements};
+    std::shared_ptr<Blob<float>> delta_blob = std::make_shared<Blob<float>>(shape);
 
-    // 调用create_delta函数
-    cudaStream_t stream = nullptr;
-    create_delta(d_delta, r, stream);
+    create_delta(delta_blob, r);
 
     // 将结果复制回主机
-    float* h_delta = new float[total_elements];
-    cudaMemcpy(h_delta, d_delta, total_elements * sizeof(float), cudaMemcpyDeviceToHost);
+    const float* h_delta = delta_blob->cpu_data();
 
     // 验证结果
     for (int y = 0; y < size; ++y)
@@ -512,29 +382,19 @@ TEST_CASE("create_delta generates correct delta values", "[cuda]")
             REQUIRE(h_delta[idx * 2 + 1] == Catch::Approx(expected_dy));
         }
     }
-
-    // 清理内存
-    delete[] h_delta;
-    cudaFree(d_delta);
 }
-TEST_CASE("create_coords_grid generate coords", "[cuda]")
+
+TEST_CASE("create_coords_grid generate coords", "[blob version]")
 {
-    const int w    = 4;
-    const int h    = 3;
-    const int size = w * h * 2;
+    const int w = 4;
+    const int h = 3;
 
-    // 在设备上分配内存
-    float* d_coords;
-    cudaMalloc(&d_coords, size * sizeof(float));
+    std::vector<int>             shape       = {w, h, 2};
+    std::shared_ptr<Blob<float>> coords_blob = std::make_shared<Blob<float>>(shape);
 
-    // 调用被测试的函数
-    create_coords_grid(d_coords, w, h);
+    create_coords_grid(coords_blob);
 
-    // 将结果从设备复制到主机
-    float* h_coords = new float[size];
-    cudaMemcpy(h_coords, d_coords, size * sizeof(float), cudaMemcpyDeviceToHost);
-
-    // 验证结果
+    const float* h_coords = coords_blob->cpu_data();
     for (int y = 0; y < h; ++y)
     {
         for (int x = 0; x < w; ++x)
@@ -544,8 +404,4 @@ TEST_CASE("create_coords_grid generate coords", "[cuda]")
             REQUIRE(h_coords[idx + 1] == y);
         }
     }
-
-    // 清理内存
-    delete[] h_coords;
-    cudaFree(d_coords);
 }

@@ -124,7 +124,7 @@ int CorrBlock::buildCorrPyramid()
 
 int CorrBlock::generateDelta()
 {
-    create_delta(delta_lvl_, radius_);
+    // create_delta(delta_lvl_, radius_);
 
     return 0;
 }

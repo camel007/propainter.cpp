@@ -14,7 +14,7 @@
 const int Nx = 128;
 const int Ny = 64;
 const int Nz = 32;
-TEST_CASE("blob test", "[test_blob]")
+TEST_CASE("blob test", "[blob version]")
 {
     float matrix[] = {0.77891346,
                       0.17474553,
@@ -45,7 +45,7 @@ TEST_CASE("blob test", "[test_blob]")
     b.SaveToNPY("./temp.npy");
 
     cnpy::NpyArray array = cnpy::npy_load("./temp.npy");
-    const float* d = array.data<float>();
+    const float*   d     = array.data<float>();
     for (size_t i = 0; i < b.count(); ++i)
     {
         REQUIRE(d[i] == matrix[i]);

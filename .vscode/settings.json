@@ -93,6 +93,8 @@
         "csignal": "cpp",
         "strstream": "cpp",
         "list": "cpp",
-        "__tuple": "cpp"
+        "__tuple": "cpp",
+        "__bit_reference": "cpp",
+        "*.ipp": "cpp"
     }
 }
