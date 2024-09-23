@@ -9,6 +9,7 @@
         }
     ],
     "editor.formatOnSave": true,
+    "files.followSymlinks": false,
     "files.associations": {
         "new": "cpp",
         "array": "cpp",

@@ -66,6 +66,7 @@ public:
     };
 
     inline static cublasHandle_t cublas_handle() { return Get().cublas_handle_; }
+    inline static cudnnHandle_t  cudnn_handle() { return Get().cudnn_handle_; }
 
     // Returns the mode: running on CPU or GPU.
     inline static Brew mode() { return Get().mode_; }
@@ -90,6 +91,7 @@ public:
 
 protected:
     cublasHandle_t cublas_handle_;
+    cudnnHandle_t  cudnn_handle_;
 
     Brew mode_;
 

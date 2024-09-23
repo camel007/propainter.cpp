@@ -6,6 +6,7 @@
 #include <cuda_runtime.h>
 #include <driver_types.h>  // cuda driver types
 
+#include "cudnn.h"
 #include "simple_log.hpp"
 
 // CUDA: various checks for different function calls.
@@ -22,6 +23,13 @@
     {                                                                                             \
         cublasStatus_t status = condition;                                                        \
         FCHECK_EQ(status, CUBLAS_STATUS_SUCCESS) << " " << ferrari::cublasGetErrorString(status); \
+    } while (0)
+
+#define CUDNN_CHECK(condition)                                                         \
+    do                                                                                 \
+    {                                                                                  \
+        cudnnStatus_t status = condition;                                              \
+        FCHECK_EQ(status, CUDNN_STATUS_SUCCESS) << " " << cudnnGetErrorString(status); \
     } while (0)
 
 // CUDA: grid stride looping

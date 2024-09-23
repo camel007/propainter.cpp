@@ -5,7 +5,10 @@
 #include <ctime>
 
 #include "common.hpp"
+#include "cudnn.h"
+#include "device_alternate.hpp"
 #include "simple_log.hpp"
+
 namespace ferrari
 {
 
@@ -15,7 +18,7 @@ Caffe& Caffe::Get()
     return instance;
 }
 
-Caffe::Caffe() : cublas_handle_(NULL), mode_(Caffe::GPU)
+Caffe::Caffe() : cublas_handle_(NULL), cudnn_handle_(NULL), mode_(Caffe::GPU)
 {
     // Try to create a cublas handler, and report an error if failed (but we will
     // keep the program running as one might just want to run CPU code).
@@ -23,12 +26,26 @@ Caffe::Caffe() : cublas_handle_(NULL), mode_(Caffe::GPU)
     {
         LOG(ERROR) << "Cannot create Cublas handle. Cublas won't be available.";
     }
+
+    if (cudnnCreate(&cudnn_handle_) != CUDNN_STATUS_SUCCESS)
+    {
+        LOG(ERROR) << "Cannot create Cudnn handle. Cudnn won't be available.";
+    }
+    else
+    {
+        size_t cudnn_version = cudnnGetVersion();
+
+        // Print the cuDNN version
+        LOG(INFO) << "cuDNN Version: " << cudnn_version;
+    }
 }
 
 Caffe::~Caffe()
 {
     if (cublas_handle_)
         CUBLAS_CHECK(cublasDestroy(cublas_handle_));
+    if (cudnn_handle_)
+        CUDNN_CHECK(cudnnDestroy(cudnn_handle_));
 }
 
 void Caffe::SetDevice(const int device_id)
@@ -45,8 +62,11 @@ void Caffe::SetDevice(const int device_id)
     CUDA_CHECK(cudaSetDevice(device_id));
     if (Get().cublas_handle_)
         CUBLAS_CHECK(cublasDestroy(Get().cublas_handle_));
-
     CUBLAS_CHECK(cublasCreate(&Get().cublas_handle_));
+
+    if (Get().cudnn_handle_)
+        CUDNN_CHECK(cudnnDestroy(Get().cudnn_handle_));
+    CUDNN_CHECK(cudnnCreate(&Get().cudnn_handle_));
 }
 
 void Caffe::DeviceQuery()

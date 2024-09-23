@@ -1,7 +1,7 @@
 #include "math_functions.hpp"
 
 #include <limits>
-
+#include <cuda_runtime.h>
 #include "common.hpp"
 #include "device_alternate.hpp"
 

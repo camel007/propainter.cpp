@@ -182,14 +182,13 @@ void Blob<Dtype>::CopyFrom(const Blob& source, bool reshape)
 template <typename Dtype>
 void Blob<Dtype>::LoadFromNPY(const std::string& filename)
 {
-    cnpy::NpyArray array = cnpy::npy_load(filename);
-
+    cnpy::NpyArray   array = cnpy::npy_load(filename);
     std::vector<int> sh(array.shape.size());
-    std::transform(array.shape.begin(), array.shape.end(), sh.begin(), [](size_t s) {
-        return static_cast<int>(s);
-    });
+    std::transform(array.shape.begin(),
+                   array.shape.end(),
+                   sh.begin(),
+                   [](size_t s) { return static_cast<int>(s); });
     Reshape(sh);
-
     Dtype*       ptr  = (Dtype*)data_->mutable_cpu_data();
     const Dtype* data = array.data<Dtype>();
     std::copy(data, data + count_, ptr);
@@ -210,7 +209,6 @@ void Blob<Dtype>::SaveToNPY(const std::string& filename)
 
     return;
 }
-
 INSTANTIATE_CLASS(Blob);
 template class Blob<int>;
 template class Blob<unsigned int>;

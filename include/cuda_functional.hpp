@@ -31,4 +31,7 @@ void broadcast_add(const std::shared_ptr<Blob<float>>& coords,
                    int                                 H,
                    std::shared_ptr<Blob<float>>&       output);
 
+void convert_row2colomn_major(const std::shared_ptr<Blob<float>>& input,
+                              std::shared_ptr<Blob<float>>&       output);
+
 }  // namespace ferrari

@@ -215,4 +215,42 @@ void broadcast_add(const std::shared_ptr<Blob<float>>& coords,
         output->mutable_gpu_data());
 }
 
+__global__ void reshapeKernel(const float* input, float* output, int batch, int dim, int ht, int wd) {
+    int idx = blockIdx.x * blockDim.x + threadIdx.x;
+    int total = batch * dim * ht * wd;
+
+    if (idx < total) {
+        int b = idx / (dim * ht * wd);
+        int d = (idx % (dim * ht * wd)) / (ht * wd);
+        int h = (idx % (ht * wd)) / wd;
+        int w = idx % wd;
+
+        output[b * dim * ht * wd + d * ht * wd + h * wd + w] = input[idx];
+    }
+}
+
+void convert_row2colomn_major(const std::shared_ptr<Blob<float>>& input,
+                              std::shared_ptr<Blob<float>>&       output)
+{
+    int batch = input->shape(0);
+    int dim   = input->shape(1);
+    int ht    = input->shape(2);
+    int wd    = input->shape(3);
+    // Compute the total number of elements
+    int totalElements = batch * dim * ht * wd;
+
+    // Define block and grid sizes
+    int threadsPerBlock = 256;
+    int blocksPerGrid   = (totalElements + threadsPerBlock - 1) / threadsPerBlock;
+
+    output->Reshape(batch, dim, ht, wd);
+
+    // Launch the kernel
+    reshapeKernel<<<blocksPerGrid, threadsPerBlock>>>(
+        input->gpu_data(), output->mutable_gpu_data(), batch, dim, ht, wd);
+
+    // Synchronize to ensure the kernel has finished executing
+    cudaDeviceSynchronize();
+}
+
 }  // namespace ferrari
