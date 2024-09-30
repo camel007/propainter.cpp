@@ -56,7 +56,7 @@ bool TrtInfer::loadEngine(const std::string& model_dir)
     file.read(engineData.data(), size);
     file.close();
 
-    engine_.reset(runtime_->deserializeCudaEngine(engineData.data(), size, nullptr));
+    engine_.reset(runtime_->deserializeCudaEngine(engineData.data(), size));
     assert(engine_ != nullptr);
 
     for (auto& value : model_config["model_files"]["input"].GetArray())
