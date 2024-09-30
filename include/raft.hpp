@@ -3,9 +3,12 @@
 #include <cublas_v2.h>
 #include <cudnn.h>
 
+#include <algorithm>
+#include <cassert>
+#include <numeric>
 #include <vector>
 
-#include "blob.hpp"
+#include "trt_infer.hpp"
 
 namespace ferrari
 {

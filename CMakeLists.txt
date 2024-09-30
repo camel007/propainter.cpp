@@ -11,20 +11,15 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CUDA_STANDARD 14)
 set(CMAKE_CUDA_STANDARD_REQUIRED ON)
 
-# 设置 CUDA 架构
-
-# 启用 CUDA 语言
 enable_language(CUDA)
-
-# 添加 CUDA 头文件路径
-include_directories(/usr/local/cuda-11.0/targets/x86_64-linux/include)
-
-# 添加 CUDA 库路径
-link_directories(/usr/local/cuda-11.0/targets/x86_64-linux/lib)
-
-# 查找 CUDA 包
+include_directories(/usr/local/cuda-12.1/targets/x86_64-linux/include)
+link_directories(/usr/local/cuda-12.1/targets/x86_64-linux/lib)
 find_package(CUDAToolkit REQUIRED)
 
+include_directories(/usr/local/include/)
+link_directories(/usr/local/lib/)
+find_package(glog REQUIRED)
+add_compile_definitions(GLOG_USE_GLOG_EXPORT)
 # 查找 cuDNN
 find_library(CUDNN_LIBRARY cudnn
     HINTS ${CUDAToolkit_LIBRARY_DIR}
@@ -61,12 +56,18 @@ set_target_properties(${PROJECT_NAME}_shared PROPERTIES
 # 链接 CUDA 运行时库
 target_link_libraries(${PROJECT_NAME}_static PRIVATE 
     CUDA::cudart
+    nvinfer
+    nvinfer_plugin
+    glog::glog
     ${CUDNN_LIBRARY}
     ${CUBLAS_LIBRARY} 
      z)
 
 target_link_libraries(${PROJECT_NAME}_shared PRIVATE 
     CUDA::cudart
+    nvinfer
+    nvinfer_plugin
+    glog::glog
     ${CUDNN_LIBRARY}
     ${CUBLAS_LIBRARY} 
      z)

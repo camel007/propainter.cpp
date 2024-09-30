@@ -5,6 +5,7 @@
 #ifndef LIBCNPY_H_
 #define LIBCNPY_H_
 
+#include <glog/logging.h>
 #include <stdint.h>
 #include <zlib.h>
 
@@ -123,14 +124,14 @@ void npy_save(std::string               fname,
 
         if (word_size != sizeof(T))
         {
-            std::cout << "libnpy error: " << fname << " has word size " << word_size
-                      << " but npy_save appending data sized " << sizeof(T) << "\n";
+            LOG(ERROR) << "libnpy error: " << fname << " has word size " << word_size
+                       << " but npy_save appending data sized " << sizeof(T) << "\n";
             assert(word_size == sizeof(T));
         }
         if (true_data_shape.size() != shape.size())
         {
-            std::cout << "libnpy error: npy_save attempting to append misdimensioned data to "
-                      << fname << "\n";
+            LOG(ERROR) << "libnpy error: npy_save attempting to append misdimensioned data to "
+                       << fname << "\n";
             assert(true_data_shape.size() != shape.size());
         }
 
@@ -138,8 +139,8 @@ void npy_save(std::string               fname,
         {
             if (shape[i] != true_data_shape[i])
             {
-                std::cout << "libnpy error: npy_save attempting to append misshaped data to "
-                          << fname << "\n";
+                LOG(ERROR) << "libnpy error: npy_save attempting to append misshaped data to "
+                           << fname << "\n";
                 assert(shape[i] == true_data_shape[i]);
             }
         }
@@ -254,7 +255,7 @@ void npz_save(std::string                zipname,
     footer += (uint32_t)(global_header_offset + nbytes +
                          local_header.size());  // offset of start of global headers, since global
                                                 // header now starts after newly written array
-    footer += (uint16_t)0;  // zip file comment length
+    footer += (uint16_t)0;                      // zip file comment length
 
     // write everything
     fwrite(&local_header[0], sizeof(char), local_header.size(), fp);

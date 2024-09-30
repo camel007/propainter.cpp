@@ -2,6 +2,7 @@
 #define CAFFE_BLOB_HPP_
 
 #include <algorithm>
+#include <memory>
 #include <string>
 #include <vector>
 
@@ -106,11 +107,11 @@ public:
      */
     inline int count(int start_axis, int end_axis) const
     {
-        FCHECK_LE(start_axis, end_axis);
-        FCHECK_GE(start_axis, 0);
-        FCHECK_GE(end_axis, 0);
-        FCHECK_LE(start_axis, num_axes());
-        FCHECK_LE(end_axis, num_axes());
+        CHECK_LE(start_axis, end_axis);
+        CHECK_GE(start_axis, 0);
+        CHECK_GE(end_axis, 0);
+        CHECK_LE(start_axis, num_axes());
+        CHECK_LE(end_axis, num_axes());
         int count = 1;
         for (int i = start_axis; i < end_axis; ++i)
         {
@@ -139,10 +140,10 @@ public:
      */
     inline int CanonicalAxisIndex(int axis_index) const
     {
-        FCHECK_GE(axis_index, -num_axes()) << "axis " << axis_index << " out of range for "
-                                           << num_axes() << "-D Blob with shape " << shape_string();
-        FCHECK_LT(axis_index, num_axes()) << "axis " << axis_index << " out of range for "
+        CHECK_GE(axis_index, -num_axes()) << "axis " << axis_index << " out of range for "
                                           << num_axes() << "-D Blob with shape " << shape_string();
+        CHECK_LT(axis_index, num_axes()) << "axis " << axis_index << " out of range for "
+                                         << num_axes() << "-D Blob with shape " << shape_string();
         if (axis_index < 0)
         {
             return axis_index + num_axes();
@@ -160,9 +161,9 @@ public:
     inline int width() const { return LegacyShape(3); }
     inline int LegacyShape(int index) const
     {
-        FCHECK_LE(num_axes(), 4) << "Cannot use legacy accessors on Blobs with > 4 axes.";
-        FCHECK_LT(index, 4);
-        FCHECK_GE(index, -4);
+        CHECK_LE(num_axes(), 4) << "Cannot use legacy accessors on Blobs with > 4 axes.";
+        CHECK_LT(index, 4);
+        CHECK_GE(index, -4);
         if (index >= num_axes() || index < -num_axes())
         {
             // Axis is out of range, but still in [0, 3] (or [-4, -1] for reverse
@@ -175,28 +176,28 @@ public:
 
     inline int offset(const int n, const int c = 0, const int h = 0, const int w = 0) const
     {
-        FCHECK_GE(n, 0);
-        FCHECK_LE(n, num());
-        FCHECK_GE(channels(), 0);
-        FCHECK_LE(c, channels());
-        FCHECK_GE(height(), 0);
-        FCHECK_LE(h, height());
-        FCHECK_GE(width(), 0);
-        FCHECK_LE(w, width());
+        CHECK_GE(n, 0);
+        CHECK_LE(n, num());
+        CHECK_GE(channels(), 0);
+        CHECK_LE(c, channels());
+        CHECK_GE(height(), 0);
+        CHECK_LE(h, height());
+        CHECK_GE(width(), 0);
+        CHECK_LE(w, width());
         return ((n * channels() + c) * height() + h) * width() + w;
     }
 
     inline int offset(const vector<int>& indices) const
     {
-        FCHECK_LE(indices.size(), num_axes());
+        CHECK_LE(indices.size(), num_axes());
         int offset = 0;
         for (int i = 0; i < num_axes(); ++i)
         {
             offset *= shape(i);
             if (indices.size() > i)
             {
-                FCHECK_GE(indices[i], 0);
-                FCHECK_LT(indices[i], shape(i));
+                CHECK_GE(indices[i], 0);
+                CHECK_LT(indices[i], shape(i));
                 offset += indices[i];
             }
         }
@@ -225,7 +226,7 @@ public:
 
     inline const std::shared_ptr<SyncedMemory>& data() const
     {
-        FCHECK(data_);
+        CHECK(data_);
         return data_;
     }
 
@@ -256,6 +257,9 @@ protected:
 
     DISABLE_COPY_AND_ASSIGN(Blob);
 };  // class Blob
+
+template <typename Dtype>
+using SharedBlob = std::shared_ptr<Blob<Dtype>>;
 
 }  // namespace ferrari
 

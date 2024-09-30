@@ -5,6 +5,7 @@
 #include "common.hpp"
 #include "cuda_functional.hpp"
 #include "device_alternate.hpp"
+#include "glog/logging.h"
 
 namespace ferrari
 {
@@ -13,11 +14,10 @@ CorrBlock::CorrBlock(int batch, int dim, int ht, int wd, int num_levels, int rad
 {
     for (int i = 0; i < num_levels_; ++i)
     {
-        int n = batch * ht * wd;
-        int c = 1;
-        int h = (int)(ht / std::pow(2, i));
-        int w = (int)(wd / std::pow(2, i));
-        std::cout << n << " " << c << " " << h << " " << w << std::endl;
+        int                          n = batch * ht * wd;
+        int                          c = 1;
+        int                          h = (int)(ht / std::pow(2, i));
+        int                          w = (int)(wd / std::pow(2, i));
         std::shared_ptr<Blob<float>> b =
             std::make_shared<Blob<float>>(std::vector<int>({n, c, h, w}));
         corr_pyramid_.push_back(b);
@@ -25,7 +25,6 @@ CorrBlock::CorrBlock(int batch, int dim, int ht, int wd, int num_levels, int rad
 
     delta_lvl_ =
         std::make_shared<Blob<float>>(std::vector<int>({1, 2 * radius_ + 1, 2 * radius_ + 1, 2}));
-    std::cout << __FUNCTION__ << " " << __LINE__ << std::endl;
 }
 
 CorrBlock::~CorrBlock() {}
@@ -99,9 +98,9 @@ int CorrBlock::computeCorr(const std::shared_ptr<Blob<float>>& fmap1,
     }
 
     for(int i = 0; i < 32; ++i){
-        std::cout << corr_pyramid_[0]->data_at(0, 0, 0, i) << "\t";
+        LOG << corr_pyramid_[0]->data_at(0, 0, 0, i) << "\t";
     }
-    std::cout << std::endl;
+    LOG << std::endl;
 
     // buildCorrPyramid();
     corr_pyramid_[0]->SaveToNPY("corr0.npy");
@@ -253,27 +252,29 @@ device float*       d_corr  = corr_pyramid_[0]->mutable_gpu_data();  // Output p
 int CorrBlock::buildCorrPyramid()
 {
     // 池化参数
-    int windowHeight = 2;
-    int windowWidth = 2;
-    int verticalStride = 2;
+    int windowHeight     = 2;
+    int windowWidth      = 2;
+    int verticalStride   = 2;
     int horizontalStride = 2;
-    int padHeight = 0;
-    int padWidth = 0;
+    int padHeight        = 0;
+    int padWidth         = 0;
 
     // 创建池化描述符
     cudnnPoolingDescriptor_t poolingDesc;
     CUDNN_CHECK(cudnnCreatePoolingDescriptor(&poolingDesc));
-    CUDNN_CHECK(cudnnSetPooling2dDescriptor(
-        poolingDesc,
-        CUDNN_POOLING_AVERAGE_COUNT_INCLUDE_PADDING,
-        CUDNN_NOT_PROPAGATE_NAN,
-        windowHeight, windowWidth,
-        padHeight, padWidth,
-        verticalStride, horizontalStride));
+    CUDNN_CHECK(cudnnSetPooling2dDescriptor(poolingDesc,
+                                            CUDNN_POOLING_AVERAGE_COUNT_INCLUDE_PADDING,
+                                            CUDNN_NOT_PROPAGATE_NAN,
+                                            windowHeight,
+                                            windowWidth,
+                                            padHeight,
+                                            padWidth,
+                                            verticalStride,
+                                            horizontalStride));
 
     // 定义 alpha 和 beta
     float alpha = 1.0f;
-    float beta = 0.0f;
+    float beta  = 0.0f;
 
     // 创建张量描述符（在循环外创建以提高效率）
     cudnnTensorDescriptor_t inputDesc, outputDesc;
@@ -281,18 +282,16 @@ int CorrBlock::buildCorrPyramid()
     CUDNN_CHECK(cudnnCreateTensorDescriptor(&outputDesc));
 
     int N = corr_pyramid_[0]->shape(0);
-    int C   = corr_pyramid_[0]->shape(1);
-    int H     = corr_pyramid_[0]->shape(2);
-    int W      = corr_pyramid_[0]->shape(3);
+    int C = corr_pyramid_[0]->shape(1);
+    int H = corr_pyramid_[0]->shape(2);
+    int W = corr_pyramid_[0]->shape(3);
 
     // 循环进行池化操作
-    for (int i = 1; i < num_levels_; ++i) {
+    for (int i = 1; i < num_levels_; ++i)
+    {
         // 设置输入张量描述符
-        CUDNN_CHECK(cudnnSetTensor4dDescriptor(
-            inputDesc,
-            CUDNN_TENSOR_NCHW,
-            CUDNN_DATA_FLOAT,
-            N, C, H, W));
+        CUDNN_CHECK(
+            cudnnSetTensor4dDescriptor(inputDesc, CUDNN_TENSOR_NCHW, CUDNN_DATA_FLOAT, N, C, H, W));
 
         // 计算输出尺寸
         int outN = N;
@@ -302,26 +301,23 @@ int CorrBlock::buildCorrPyramid()
 
         // 设置输出张量描述符
         CUDNN_CHECK(cudnnSetTensor4dDescriptor(
-            outputDesc,
-            CUDNN_TENSOR_NCHW,
-            CUDNN_DATA_FLOAT,
-            outN, outC, outH, outW));
+            outputDesc, CUDNN_TENSOR_NCHW, CUDNN_DATA_FLOAT, outN, outC, outH, outW));
 
-        const float *d_input = corr_pyramid_[i-1]->gpu_data();
-        float* d_output = corr_pyramid_[i]->mutable_gpu_data();
+        const float* d_input  = corr_pyramid_[i - 1]->gpu_data();
+        float*       d_output = corr_pyramid_[i]->mutable_gpu_data();
 
         // 执行池化操作
-        CUDNN_CHECK(cudnnPoolingForward(
-            Caffe::cudnn_handle(),
-            poolingDesc,
-            &alpha,
-            inputDesc, d_input,
-            &beta,
-            outputDesc, d_output));
+        CUDNN_CHECK(cudnnPoolingForward(Caffe::cudnn_handle(),
+                                        poolingDesc,
+                                        &alpha,
+                                        inputDesc,
+                                        d_input,
+                                        &beta,
+                                        outputDesc,
+                                        d_output));
 
         H = outH;
         W = outW;
-        
     }
     // 清理资源
     CUDNN_CHECK(cudnnDestroyTensorDescriptor(inputDesc));

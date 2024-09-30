@@ -1,0 +1,11 @@
+{
+    "model_files": {
+        "name": "fnet.trt",
+        "input": [
+            "data"
+        ],
+        "output": [
+            "output"
+        ]
+    }
+}
